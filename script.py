@@ -1,7 +1,7 @@
 import os, json, requests
 from bs4 import BeautifulSoup
 
-WEBHOOK_URL = 'https://discord.com/api/webhooks/1372408606124675134/AdGPE0gY7nxgG0OGKWbzOpJ9cjp9qGhGhfKf_yXFYtl59rXtxIZ_SImOpYP_YCHAEs8w'
+WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')
 STATUS_FILE = 'status.json'
 CATALOG_URL = 'https://www.marukyu-koyamaen.co.jp/english/shop/products/catalog/matcha?viewall=1'
 
