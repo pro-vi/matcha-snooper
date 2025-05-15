@@ -1,0 +1,28 @@
+name: Matcha Snooper
+
+on:
+  schedule:
+    # runs every 10 minutes
+    - cron: "*/10 * * * *"
+  workflow_dispatch: # allows manual trigger
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run restock script
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python script.py
