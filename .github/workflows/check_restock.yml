@@ -1,28 +1,45 @@
-name: Matcha Snooper
+name: Restock Watcher
 
 on:
   schedule:
-    # runs every 10 minutes
-    - cron: "*/10 * * * *"
-  workflow_dispatch: # allows manual trigger
+    - cron: "*/10 * * * *" # every 10m UTC
+  workflow_dispatch:
 
 jobs:
   watch:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      # 1. Get your code
+      - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. Restore previous status.json if cached
+      - name: Restore status.json cache
+        uses: actions/cache@v3
+        with:
+          path: status.json
+          key: matcha-snooper-state
+
+      # 3. Python setup
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
 
+      # 4. Install deps
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # 5. Run your scraper
       - name: Run restock script
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python script.py
+
+      # 6. Cache the updated status.json for next run
+      - name: Save status.json to cache
+        uses: actions/cache@v3
+        with:
+          path: status.json
+          key: matcha-snooper-state
