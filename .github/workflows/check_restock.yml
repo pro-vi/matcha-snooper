@@ -1,56 +1,41 @@
 name: Restock Watcher
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: '*/10 * * * *'   # every 10 min UTC
+  workflow_dispatch:
 
 jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Restore status.json cache
-        id: cache
-        uses: actions/cache@v3
+      # 1. Checkout code _with_ write perms
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
-          path: status.json
-          key: matcha-snooper-state
+          persist-credentials: true  # so we can push commits
 
-      - name: Show *restored* status.json
-        run: |
-          echo "--- RESTORED status.json (cache-hit=${{ steps.cache.outputs.cache-hit }}) ---"
-          if [ -f status.json ]; then cat status.json; else echo "(none)"; fi
-          echo
-
+      # 2. Python setup
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.x
+          python-version: '3.x'
 
+      # 3. Install dependencies
       - name: Install deps
         run: pip install -r requirements.txt
 
+      # 4. Run your watcher (updates status.json)
       - name: Run restock script
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python script.py
 
-      - name: Show *new* status.json
-        run: |
-          echo "--- NEW status.json ---"
-          cat status.json
-          echo
-
-      - name: Save status.json to cache
-        uses: actions/cache@v3
+      # 5. Commit any changes to status.json
+      - name: Commit updated status.json
+        uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          path: status.json
-          key: matcha-snooper-state
-
-      - name: Upload status.json artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: status-json
-          path: status.json
+          commit_message: chore: update status.json
+          file_pattern: status.json
+          branch: main
+          # GITHUB_TOKEN is provided automatically, no need to set
