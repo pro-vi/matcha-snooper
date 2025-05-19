@@ -1,5 +1,9 @@
 name: Restock Watcher
 
+# Grant write access so the auto-commit can push back to main
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -10,46 +14,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout with creds & full history so we can push
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
-          persist-credentials: true
-          fetch-depth: 0
+          persist-credentials: true # so the checkout action uses the token for pushes
 
-      # 2. See what branch & remotes we have
-      - name: Debug Git
-        run: |
-          echo "=== Git config ==="
-          git config --list
-          echo
-          echo "=== Git status ==="
-          git status
-          echo
-          echo "=== Branch & remote ==="
-          git branch
-          git remote -v
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
-      # 3. Run your script
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: Run restock script
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python script.py
 
-      # 4. Show any diffs
-      - name: Show diff
-        run: |
-          echo "=== After script, status.json diff ==="
-          git status
-          git diff
-
-      # 5. Try to commit & push manually
-      - name: Manual commit & push
-        run: |
-          git add status.json
-          if git diff --cached; then
-            git commit -m "ci: update status.json"
-            git push origin main
-          else
-            echo "⏭️ No changes to commit"
-          fi
+      - name: Commit updated status.json
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: update status.json"
+          file_pattern: "status.json"
+          branch: "main"
